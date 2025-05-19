@@ -18,32 +18,29 @@ const recaptchaWidgetDefinition = {
     },
   ],
   instantiate: function (context, domNode, initialProps, eventManager) {
-    // Crear contenedor para el reCAPTCHA
-    const widgetId = "recaptcha_" + context.dataId;
+    const widgetId = "recaptcha_" + (context.dataId || Date.now());
     const container = document.createElement("div");
     container.id = widgetId;
     domNode.appendChild(container);
 
-    // Variable para almacenar el token de reCAPTCHA
     let token = "";
 
-    // Función para renderizar el CAPTCHA una vez que la librería carga
     function renderRecaptcha() {
-      if (window.grecaptcha && container) {
+      if (window.grecaptcha && document.getElementById(widgetId)) {
         window.grecaptcha.render(widgetId, {
           sitekey: initialProps.siteKey,
           callback: function (responseToken) {
-            token = responseToken; // guardar token cuando el usuario resuelve
+            token = responseToken;
           },
         });
+      } else {
+        console.error("No se pudo encontrar el contenedor para reCAPTCHA");
       }
     }
 
-    // Si la librería ya está cargada, renderizar de inmediato
     if (window.grecaptcha) {
-      renderRecaptcha();
+      setTimeout(renderRecaptcha, 0);
     } else {
-      // Si no está cargada, insertar script de Google y luego renderizar
       const script = document.createElement("script");
       script.src = "https://www.google.com/recaptcha/api.js";
       script.async = true;
@@ -52,28 +49,22 @@ const recaptchaWidgetDefinition = {
       document.head.appendChild(script);
     }
 
-    // Métodos obligatorios por la API de widget
     return {
-      // Retorna el token capturado (valor del widget)
       getValue: function () {
         return token;
       },
-      // Permite asignar valor (no se usa normalmente con reCAPTCHA)
       setValue: function (val) {
         token = val;
       },
-      // Valida el valor: si está vacío y es requerido, devuelve mensaje
       validateValue: function (val) {
         if ((val === "" || val == null) && initialProps.required) {
           return "Por favor, verifica el reCAPTCHA";
         }
         return true;
       },
-      // Captura cambios en propiedades (por ejemplo, cambiar siteKey)
       setProperty: function (propName, propValue) {
         if (propName === "siteKey") {
           initialProps.siteKey = propValue;
-          // Si ya se había rendereado, reiniciamos el CAPTCHA
           if (window.grecaptcha) {
             window.grecaptcha.reset();
             renderRecaptcha();
