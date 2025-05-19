@@ -24,30 +24,54 @@ const recaptchaWidgetDefinition = {
     domNode.appendChild(container);
 
     let token = "";
+    let recaptchaWidgetId = null;
 
     function renderRecaptcha() {
-      if (window.grecaptcha && document.getElementById(widgetId)) {
-        window.grecaptcha.render(widgetId, {
-          sitekey: initialProps.siteKey,
-          callback: function (responseToken) {
-            token = responseToken;
-          },
-        });
+      const recaptchaContainer = document.getElementById(widgetId);
+      if (window.grecaptcha && recaptchaContainer) {
+        try {
+          recaptchaWidgetId = window.grecaptcha.render(widgetId, {
+            sitekey: initialProps.siteKey,
+            callback: function (responseToken) {
+              token = responseToken;
+            },
+            "expired-callback": function () {
+              token = "";
+            },
+            "error-callback": function () {
+              console.error("Error al cargar reCAPTCHA");
+              token = "";
+            },
+          });
+        } catch (err) {
+          console.error("Error al renderizar reCAPTCHA:", err);
+        }
       } else {
-        console.error("No se pudo encontrar el contenedor para reCAPTCHA");
+        console.error(
+          "No se pudo encontrar el contenedor para reCAPTCHA o grecaptcha no está disponible."
+        );
       }
     }
 
-    if (window.grecaptcha) {
-      setTimeout(renderRecaptcha, 0);
-    } else {
-      const script = document.createElement("script");
-      script.src = "https://www.google.com/recaptcha/api.js";
-      script.async = true;
-      script.defer = true;
-      script.onload = renderRecaptcha;
-      document.head.appendChild(script);
+    function loadRecaptchaScript() {
+      if (!window.grecaptcha) {
+        const script = document.createElement("script");
+        script.src =
+          "https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoadCallback&render=explicit";
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+      } else {
+        renderRecaptcha();
+      }
     }
+
+    // Callback global para cuando se carga reCAPTCHA
+    window.onRecaptchaLoadCallback = function () {
+      renderRecaptcha();
+    };
+
+    loadRecaptchaScript();
 
     return {
       getValue: function () {
@@ -65,14 +89,19 @@ const recaptchaWidgetDefinition = {
       setProperty: function (propName, propValue) {
         if (propName === "siteKey") {
           initialProps.siteKey = propValue;
-          if (window.grecaptcha) {
-            window.grecaptcha.reset();
-            renderRecaptcha();
+          if (window.grecaptcha && recaptchaWidgetId !== null) {
+            try {
+              window.grecaptcha.reset(recaptchaWidgetId);
+              renderRecaptcha();
+            } catch (e) {
+              console.error("Error al resetear reCAPTCHA:", e);
+            }
           }
         }
       },
     };
   },
 };
+
 // Registrar el widget en LEAP
 nitro.registerWidget(recaptchaWidgetDefinition);
