@@ -29,13 +29,18 @@ const recaptchaWidgetDefinition = {
 
     // Función para renderizar el CAPTCHA una vez que la librería carga
     function renderRecaptcha() {
-      if (window.grecaptcha && container) {
-        window.grecaptcha.render(widgetId, {
-          sitekey: initialProps.siteKey,
-          callback: function (responseToken) {
-            token = responseToken; // guardar token cuando el usuario resuelve
-          },
-        });
+      if (window.grecaptcha) {
+        const target = document.getElementById(widgetId);
+        if (target) {
+          window.grecaptcha.render(target, {
+            sitekey: initialProps.siteKey,
+            callback: function (responseToken) {
+              token = responseToken;
+            },
+          });
+        } else {
+          console.error("No se encontró el contenedor con ID:", widgetId);
+        }
       }
     }
 
