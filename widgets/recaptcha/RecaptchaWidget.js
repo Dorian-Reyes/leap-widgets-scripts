@@ -7,7 +7,7 @@ const recaptchaWidgetDefinition = {
   description: "Verificación anti-bots con Google reCAPTCHA",
   datatype: { type: "string" }, // devuelve el token del CAPTCHA
   category: { id: "custom.security", label: "Avanzado" }, // Paleta “Seguridad”
-  iconClassName: "fa fa-shield-alt", // icono (FontAwesome)
+  iconClassName: "recaptcha-icon", // icono (FontAwesome)
   builtInProperties: [{ id: "required" }, { id: "title" }],
   properties: [
     {
