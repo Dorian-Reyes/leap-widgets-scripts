@@ -21,39 +21,75 @@ const recaptchaWidgetDefinition = {
     const widgetId =
       "recaptcha_" +
       (context.dataId || Math.random().toString(36).substr(2, 9));
-    const container = document.createElement("div");
-    container.id = widgetId;
-    domNode.appendChild(container);
+
+    // Creamos el contenedor si no existe
+    let container = document.getElementById(widgetId);
+    if (!container) {
+      container = document.createElement("div");
+      container.id = widgetId;
+      domNode.appendChild(container);
+    }
 
     let token = "";
 
-    function renderRecaptcha() {
+    // Función robusta para renderizar con reintento si grecaptcha o el contenedor no están listos
+    function renderRecaptcha(attempt = 0) {
+      const MAX_ATTEMPTS = 10;
+      const DELAY_MS = 500;
+
       const captchaContainer = document.getElementById(widgetId);
+
       if (!captchaContainer) {
-        console.error("No se encontró el contenedor con ID:", widgetId);
+        console.warn(
+          `Intento ${attempt}: Contenedor con ID '${widgetId}' aún no disponible`
+        );
+        if (attempt < MAX_ATTEMPTS) {
+          setTimeout(() => renderRecaptcha(attempt + 1), DELAY_MS);
+        }
         return;
       }
 
-      if (window.grecaptcha) {
-        window.grecaptcha.render(widgetId, {
-          sitekey: initialProps.siteKey,
-          callback: function (responseToken) {
-            token = responseToken;
-            eventManager.fireEvent("onChange"); // Notifica a Leap que hubo un cambio
-          },
-        });
+      if (window.grecaptcha && grecaptcha.render) {
+        try {
+          grecaptcha.render(widgetId, {
+            sitekey: initialProps.siteKey,
+            callback: function (responseToken) {
+              token = responseToken;
+              eventManager.fireEvent("onChange"); // Notifica a Leap que hubo un cambio
+            },
+          });
+        } catch (e) {
+          console.error("Error al renderizar reCAPTCHA:", e.message);
+        }
+      } else {
+        console.warn(`Intento ${attempt}: grecaptcha aún no está disponible`);
+        if (attempt < MAX_ATTEMPTS) {
+          setTimeout(() => renderRecaptcha(attempt + 1), DELAY_MS);
+        }
       }
     }
 
-    if (window.grecaptcha) {
+    // Si grecaptcha ya está en la ventana, renderizamos de inmediato
+    if (window.grecaptcha && grecaptcha.render) {
       renderRecaptcha();
     } else {
-      const script = document.createElement("script");
-      script.src = "https://www.google.com/recaptcha/api.js";
-      script.async = true;
-      script.defer = true;
-      script.onload = renderRecaptcha;
-      document.head.appendChild(script);
+      // Cargamos el script de reCAPTCHA dinámicamente
+      const existingScript = document.querySelector(
+        "script[src*='recaptcha/api.js']"
+      );
+      if (!existingScript) {
+        const script = document.createElement("script");
+        script.src = "https://www.google.com/recaptcha/api.js";
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          renderRecaptcha();
+        };
+        document.head.appendChild(script);
+      } else {
+        // Si ya existe pero no ha cargado, intentamos en bucle
+        renderRecaptcha();
+      }
     }
 
     return {
@@ -75,11 +111,11 @@ const recaptchaWidgetDefinition = {
           const captchaContainer = document.getElementById(widgetId);
           if (window.grecaptcha && captchaContainer) {
             try {
-              window.grecaptcha.reset();
+              grecaptcha.reset();
+              renderRecaptcha();
             } catch (e) {
               console.warn("Intento de reset fallido:", e.message);
             }
-            renderRecaptcha();
           }
         }
       },
