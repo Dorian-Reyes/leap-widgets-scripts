@@ -87,8 +87,10 @@ const recaptchaWidgetDefinition = {
         if ((val === "" || val == null) && initialProps.required) {
           return "Por favor, verifica el reCAPTCHA";
         }
-        return true;
+        // null indica que el valor es válido según la doc de Leap
+        return null;
       },
+
       setProperty: (propName, propValue) => {
         if (propName === "siteKey") {
           initialProps.siteKey = propValue;
