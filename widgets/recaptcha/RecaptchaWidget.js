@@ -1,11 +1,10 @@
-// RecaptchaWidget.js
 const recaptchaWidgetDefinition = {
   id: "custom.Recaptcha",
   version: "2.0.0",
   apiVersion: "1.0.0",
   label: "Google reCAPTCHA",
   description: "Verificación anti-bots con Google reCAPTCHA",
-  datatype: { type: "string" }, // devuelve el token del CAPTCHA
+  datatype: { type: "string" },
   category: { id: "custom.security", label: "Widgets personalizados" },
   iconClassName: "recaptcha-icon",
   builtInProperties: [{ id: "required" }, { id: "title" }],
@@ -22,7 +21,6 @@ const recaptchaWidgetDefinition = {
     const widgetId =
       "recaptcha_" +
       (context.dataId || Math.random().toString(36).substr(2, 9));
-
     let token = "";
     let container = document.getElementById(widgetId);
 
@@ -32,15 +30,13 @@ const recaptchaWidgetDefinition = {
       domNode.appendChild(container);
     }
 
-    // Función para renderizar reCAPTCHA con reintentos
     function renderRecaptcha(attempt = 0) {
       const MAX_ATTEMPTS = 10;
       const DELAY_MS = 500;
 
       if (!container) {
-        if (attempt < MAX_ATTEMPTS) {
+        if (attempt < MAX_ATTEMPTS)
           setTimeout(() => renderRecaptcha(attempt + 1), DELAY_MS);
-        }
         return;
       }
 
@@ -50,7 +46,7 @@ const recaptchaWidgetDefinition = {
             sitekey: initialProps.siteKey,
             callback: function (responseToken) {
               token = responseToken;
-              eventManager.fireEvent("onChange"); // Leap detecta cambio
+              eventManager.fireEvent("onChange"); // Leap reevalúa el estado
             },
           });
         } catch (e) {
@@ -61,7 +57,7 @@ const recaptchaWidgetDefinition = {
       }
     }
 
-    // Cargar script si no existe
+    // Cargar script de reCAPTCHA
     const existingScript = document.querySelector(
       "script[src*='recaptcha/api.js']"
     );
@@ -81,12 +77,13 @@ const recaptchaWidgetDefinition = {
       setValue: (val) => {
         token = val;
       },
-      // Validación obligatoria
-      validateValue: (val) => {
+      validateValue: () => {
+        // Mientras no haya token, devolvemos error
         if (initialProps.required && (!token || token.trim() === "")) {
-          return "Por favor, verifica el reCAPTCHA"; // campo obligatorio
+          return "Por favor, verifica el reCAPTCHA";
         }
-        return true; // token presente => campo válido
+        // Token válido → devuelve null para indicar que todo está bien
+        return null;
       },
       setProperty: (propName, propValue) => {
         if (propName === "siteKey") {
@@ -101,7 +98,6 @@ const recaptchaWidgetDefinition = {
           }
         }
       },
-      // Permite cambiar si el campo es obligatorio
       setRequired: (isRequired) => {
         initialProps.required = isRequired;
       },
