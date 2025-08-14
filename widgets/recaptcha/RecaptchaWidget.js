@@ -19,14 +19,12 @@ const recaptchaWidgetDefinition = {
   ],
 
   instantiate: function (context, domNode, initialProps, eventManager) {
-    // --- Variables internas ---
     const widgetId =
       "recaptcha_" +
       (context.dataId || Math.random().toString(36).substr(2, 9));
     let token = "";
     let container = null;
 
-    // --- Método obligatorio _init ---
     function _init() {
       container = document.getElementById(widgetId);
       if (!container) {
@@ -37,7 +35,6 @@ const recaptchaWidgetDefinition = {
       _renderRecaptcha();
     }
 
-    // --- Renderizado robusto de reCAPTCHA ---
     function _renderRecaptcha(attempt = 0) {
       const MAX_ATTEMPTS = 10;
       const DELAY_MS = 500;
@@ -50,7 +47,7 @@ const recaptchaWidgetDefinition = {
             sitekey: initialProps.siteKey,
             callback: function (responseToken) {
               token = responseToken;
-              eventManager.fireEvent("onChange");
+              eventManager.fireEvent("onChange"); // Leap sabrá que el valor cambió
             },
           });
         } catch (e) {
@@ -61,7 +58,7 @@ const recaptchaWidgetDefinition = {
       }
     }
 
-    // --- Cargar script si no existe ---
+    // Cargar script si no existe
     const existingScript = document.querySelector(
       "script[src*='recaptcha/api.js']"
     );
@@ -76,18 +73,19 @@ const recaptchaWidgetDefinition = {
       _init();
     }
 
-    // --- Instancia final que devuelve Leap ---
     return {
-      _init, // Obligatorio
+      _init,
       getValue: () => token,
       setValue: (val) => {
         token = val;
       },
+      // --- Aquí usamos la validación de Leap directamente ---
       validateValue: (val) => {
+        // Si es obligatorio y no tiene token, devolvemos un string de error
         if ((val === "" || val == null) && initialProps.required) {
           return "Por favor, verifica el reCAPTCHA";
         }
-        return null;
+        return null; // todo bien
       },
       setProperty: (propName, propValue) => {
         if (propName === "siteKey") {
