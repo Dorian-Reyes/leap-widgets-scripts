@@ -5,7 +5,7 @@ const recaptchaWidgetDefinition = {
   apiVersion: "1.0.0",
   label: "Google reCAPTCHA",
   description: "Verificación anti-bots con Google reCAPTCHA",
-  datatype: { type: "string" },
+  datatype: { type: "string" }, // Definir como data widget
   category: { id: "custom.security", label: "Widgets personalizados" },
   iconClassName: "recaptcha-icon",
   builtInProperties: [{ id: "required" }, { id: "title" }],
@@ -47,7 +47,7 @@ const recaptchaWidgetDefinition = {
             sitekey: initialProps.siteKey,
             callback: function (responseToken) {
               token = responseToken;
-              eventManager.fireEvent("onChange"); // Leap sabrá que el valor cambió
+              eventManager.fireEvent("onChange"); // Notificar a Leap que el valor ha cambiado
             },
           });
         } catch (e) {
@@ -58,7 +58,7 @@ const recaptchaWidgetDefinition = {
       }
     }
 
-    // Cargar script si no existe
+    // Cargar el script de reCAPTCHA si no está presente
     const existingScript = document.querySelector(
       "script[src*='recaptcha/api.js']"
     );
@@ -79,13 +79,12 @@ const recaptchaWidgetDefinition = {
       setValue: (val) => {
         token = val;
       },
-      // --- Aquí usamos la validación de Leap directamente ---
       validateValue: (val) => {
-        // Si es obligatorio y no tiene token, devolvemos un string de error
-        if ((val === "" || val == null) && initialProps.required) {
+        // Validar si el campo es obligatorio y no tiene valor
+        if (initialProps.required && (!val || val.trim() === "")) {
           return "Por favor, verifica el reCAPTCHA";
         }
-        return null; // todo bien
+        return null; // Todo está bien
       },
       setProperty: (propName, propValue) => {
         if (propName === "siteKey") {
@@ -104,5 +103,5 @@ const recaptchaWidgetDefinition = {
   },
 };
 
-// Registrar widget
+// Registrar el widget en Nitro
 nitro.registerWidget(recaptchaWidgetDefinition);
