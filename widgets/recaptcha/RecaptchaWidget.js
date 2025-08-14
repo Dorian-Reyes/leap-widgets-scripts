@@ -5,58 +5,61 @@ const recaptchaWidgetDefinition = {
   apiVersion: "1.0.0",
   label: "Google reCAPTCHA",
   description: "Verificación anti-bots con Google reCAPTCHA",
-  datatype: { type: "string" }, // token del captcha
+  datatype: { type: "string" }, // El token será un string
   category: { id: "custom.security", label: "Widgets personalizados" },
   iconClassName: "recaptcha-icon",
+
+  // Solo propiedades internas de Leap: required y título
   builtInProperties: [{ id: "required" }, { id: "title" }],
-  properties: [
-    {
-      id: "siteKey",
-      label: "Clave del sitio (SiteKey)",
-      propType: "string",
-      defaultValue: "TU_SITE_KEY_AQUI",
-    },
-    {
-      id: "token",
-      label: "Token del captcha",
-      propType: "string",
-      defaultValue: "", // vacía al inicio
-    },
-  ],
+
+  // No exponemos siteKey ni token en propiedades
+  properties: [],
 
   instantiate: function (context, domNode, initialProps, eventManager) {
     const widgetId =
       "recaptcha_" +
       (context.dataId || Math.random().toString(36).substr(2, 9));
 
-    let token = "";
-    let container = document.getElementById(widgetId);
+    // Clave del sitio quemada
+    const SITE_KEY = "6Ld6zxArAAAAAPDYDDPDAOfjpZguznwnM8m5W7vd";
 
+    // Contenedor del CAPTCHA
+    let container = document.getElementById(widgetId);
     if (!container) {
       container = document.createElement("div");
       container.id = widgetId;
       domNode.appendChild(container);
     }
 
-    // Función para renderizar reCAPTCHA
+    // Variable para almacenar el token
+    let token = "";
+
+    /**
+     * Renderiza el reCAPTCHA con reintentos si aún no está listo
+     */
     function renderRecaptcha(attempt = 0) {
       const MAX_ATTEMPTS = 10;
       const DELAY_MS = 500;
 
-      if (!container) {
-        if (attempt < MAX_ATTEMPTS)
+      const captchaContainer = document.getElementById(widgetId);
+      if (!captchaContainer) {
+        if (attempt < MAX_ATTEMPTS) {
           setTimeout(() => renderRecaptcha(attempt + 1), DELAY_MS);
+        }
         return;
       }
 
       if (window.grecaptcha && grecaptcha.render) {
         try {
           grecaptcha.render(widgetId, {
-            sitekey: initialProps.siteKey,
+            sitekey: SITE_KEY,
             callback: function (responseToken) {
-              token = responseToken; // actualizamos token
-              initialProps.token = token; // sincronizamos con la propiedad
-              eventManager.fireEvent("onChange"); // Leap reevalúa el campo obligatorio
+              token = responseToken; // Guardamos token recibido
+              eventManager.fireEvent("onChange"); // Notifica a Leap que cambió el valor
+            },
+            "expired-callback": function () {
+              token = ""; // Resetea si expira
+              eventManager.fireEvent("onChange");
             },
           });
         } catch (e) {
@@ -67,53 +70,53 @@ const recaptchaWidgetDefinition = {
       }
     }
 
-    // Cargar script de reCAPTCHA si no existe
-    const existingScript = document.querySelector(
-      "script[src*='recaptcha/api.js']"
-    );
-    if (!existingScript) {
-      const script = document.createElement("script");
-      script.src = "https://www.google.com/recaptcha/api.js";
-      script.async = true;
-      script.defer = true;
-      script.onload = () => renderRecaptcha();
-      document.head.appendChild(script);
-    } else {
-      renderRecaptcha();
+    /**
+     * Carga el script de reCAPTCHA si no está presente
+     */
+    function loadRecaptchaScript() {
+      const existingScript = document.querySelector(
+        "script[src*='recaptcha/api.js']"
+      );
+
+      if (!existingScript) {
+        const script = document.createElement("script");
+        script.src = "https://www.google.com/recaptcha/api.js";
+        script.async = true;
+        script.defer = true;
+        script.onload = () => renderRecaptcha();
+        document.head.appendChild(script);
+      } else {
+        renderRecaptcha();
+      }
     }
 
+    // Inicializa
+    if (window.grecaptcha && grecaptcha.render) {
+      renderRecaptcha();
+    } else {
+      loadRecaptchaScript();
+    }
+
+    // API que Leap espera de un widget con valor
     return {
-      getValue: () => token, // Leap lee el token como valor del campo
-      setValue: (val) => {
-        token = val;
-        initialProps.token = token;
+      getValue: function () {
+        return token;
       },
-      validateValue: () => {
-        // Si es obligatorio y token vacío → error
-        if (initialProps.required && (!token || token.trim() === "")) {
+      setValue: function (val) {
+        token = val;
+      },
+      validateValue: function (val) {
+        if ((!val || val === "") && initialProps.required) {
           return "Por favor, verifica el reCAPTCHA";
         }
-        return null; // todo bien si hay token
+        return true;
       },
-      setProperty: (propName, propValue) => {
-        if (propName === "siteKey") {
-          initialProps.siteKey = propValue;
-          if (window.grecaptcha && container) {
-            try {
-              grecaptcha.reset();
-              renderRecaptcha();
-            } catch (e) {
-              console.warn("Intento de reset fallido:", e.message);
-            }
-          }
-        }
-      },
-      setRequired: (isRequired) => {
-        initialProps.required = isRequired;
+      setProperty: function () {
+        // No necesitamos reaccionar a propiedades, ya que no hay configurables
       },
     };
   },
 };
 
-// Registrar widget
+// Registrar el widget en LEAP
 nitro.registerWidget(recaptchaWidgetDefinition);
