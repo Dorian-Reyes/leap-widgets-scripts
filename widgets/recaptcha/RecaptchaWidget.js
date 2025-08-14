@@ -13,7 +13,7 @@ const recaptchaWidgetDefinition = {
       id: "siteKey",
       label: "Clave del sitio (SiteKey)",
       propType: "string",
-      defaultValue: "6Ld6zxArAAAAAPDYDDPDAOfjpZguznwnM8m5W7vd",
+      defaultValue: "TU_SITE_KEY_AQUI",
     },
   ],
 
@@ -21,6 +21,7 @@ const recaptchaWidgetDefinition = {
     const widgetId =
       "recaptcha_" +
       (context.dataId || Math.random().toString(36).substr(2, 9));
+
     let token = "";
     let container = document.getElementById(widgetId);
 
@@ -30,10 +31,6 @@ const recaptchaWidgetDefinition = {
       domNode.appendChild(container);
     }
 
-    // Aseguramos que required tenga un valor booleano
-    if (initialProps.required === undefined) initialProps.required = true;
-
-    // Función robusta para renderizar reCAPTCHA con reintentos
     function renderRecaptcha(attempt = 0) {
       const MAX_ATTEMPTS = 10;
       const DELAY_MS = 500;
@@ -50,7 +47,6 @@ const recaptchaWidgetDefinition = {
             sitekey: initialProps.siteKey,
             callback: function (responseToken) {
               token = responseToken;
-              // Disparar evento de cambio para que Leap reevalúe el formulario
               eventManager.fireEvent("onChange");
             },
           });
@@ -62,7 +58,6 @@ const recaptchaWidgetDefinition = {
       }
     }
 
-    // Cargar script de reCAPTCHA si no existe
     const existingScript = document.querySelector(
       "script[src*='recaptcha/api.js']"
     );
@@ -83,16 +78,11 @@ const recaptchaWidgetDefinition = {
         token = val;
       },
       validateValue: () => {
-        const isRequired = !!initialProps.required; // forzamos booleano
-        console.log("Acabamos de forzar el booleano:", isRequired);
+        const isRequired = !!initialProps.required;
         if (isRequired && (!token || token.trim() === "")) {
-          return "Por favor, verifica el reCAPTCHA"; // bloquea envío
-        } else {
-          console.log("El token es:", token);
-          console.log("El token es valido:", token !== "");
-          console.log("El valor de isRequired es:", isRequired);
-          // return null; // token presente → válido
+          return "Por favor, verifica el reCAPTCHA";
         }
+        return null;
       },
       setProperty: (propName, propValue) => {
         if (propName === "siteKey") {
@@ -114,5 +104,4 @@ const recaptchaWidgetDefinition = {
   },
 };
 
-// Registrar widget en Leap
 nitro.registerWidget(recaptchaWidgetDefinition);
