@@ -23,24 +23,21 @@ const recaptchaWidgetDefinition = {
       "recaptcha_" +
       (context.dataId || Math.random().toString(36).substr(2, 9));
 
-    // Creamos el contenedor si no existe
+    let token = "";
     let container = document.getElementById(widgetId);
+
     if (!container) {
       container = document.createElement("div");
       container.id = widgetId;
       domNode.appendChild(container);
     }
 
-    let token = ""; // Variable interna para el token
-
-    // Función robusta para renderizar con reintento si grecaptcha o el contenedor no están listos
+    // Función para renderizar reCAPTCHA con reintentos
     function renderRecaptcha(attempt = 0) {
       const MAX_ATTEMPTS = 10;
       const DELAY_MS = 500;
 
-      const captchaContainer = document.getElementById(widgetId);
-
-      if (!captchaContainer) {
+      if (!container) {
         if (attempt < MAX_ATTEMPTS) {
           setTimeout(() => renderRecaptcha(attempt + 1), DELAY_MS);
         }
@@ -52,8 +49,8 @@ const recaptchaWidgetDefinition = {
           grecaptcha.render(widgetId, {
             sitekey: initialProps.siteKey,
             callback: function (responseToken) {
-              token = responseToken; // Actualizamos token cuando el usuario completa el captcha
-              eventManager.fireEvent("onChange"); // Notifica a Leap que hubo un cambio
+              token = responseToken;
+              eventManager.fireEvent("onChange"); // Leap detecta cambio
             },
           });
         } catch (e) {
@@ -64,49 +61,37 @@ const recaptchaWidgetDefinition = {
       }
     }
 
-    // Renderizamos el captcha
-    if (window.grecaptcha && grecaptcha.render) {
-      renderRecaptcha();
+    // Cargar script si no existe
+    const existingScript = document.querySelector(
+      "script[src*='recaptcha/api.js']"
+    );
+    if (!existingScript) {
+      const script = document.createElement("script");
+      script.src = "https://www.google.com/recaptcha/api.js";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => renderRecaptcha();
+      document.head.appendChild(script);
     } else {
-      // Cargamos el script de reCAPTCHA dinámicamente si no está
-      const existingScript = document.querySelector(
-        "script[src*='recaptcha/api.js']"
-      );
-      if (!existingScript) {
-        const script = document.createElement("script");
-        script.src = "https://www.google.com/recaptcha/api.js";
-        script.async = true;
-        script.defer = true;
-        script.onload = () => {
-          renderRecaptcha();
-        };
-        document.head.appendChild(script);
-      } else {
-        renderRecaptcha();
-      }
+      renderRecaptcha();
     }
 
     return {
-      _init: renderRecaptcha,
-      getValue: function () {
-        return token;
-      },
-      setValue: function (val) {
+      getValue: () => token,
+      setValue: (val) => {
         token = val;
       },
-      validateValue: function () {
-        // Si es obligatorio y todavía no hay token, devolver mensaje de error
+      // Validación obligatoria
+      validateValue: (val) => {
         if (initialProps.required && (!token || token.trim() === "")) {
-          return "Por favor, verifica el reCAPTCHA";
+          return "Por favor, verifica el reCAPTCHA"; // campo obligatorio
         }
-        // Cuando hay token válido, todo bien
-        return null;
+        return true; // token presente => campo válido
       },
-      setProperty: function (propName, propValue) {
+      setProperty: (propName, propValue) => {
         if (propName === "siteKey") {
           initialProps.siteKey = propValue;
-          const captchaContainer = document.getElementById(widgetId);
-          if (window.grecaptcha && captchaContainer) {
+          if (window.grecaptcha && container) {
             try {
               grecaptcha.reset();
               renderRecaptcha();
@@ -116,22 +101,13 @@ const recaptchaWidgetDefinition = {
           }
         }
       },
-      setRequired: function (isRequired) {
+      // Permite cambiar si el campo es obligatorio
+      setRequired: (isRequired) => {
         initialProps.required = isRequired;
-        // Forzamos un render para actualizar la validación visual
-        const captchaContainer = document.getElementById(widgetId);
-        if (window.grecaptcha && captchaContainer) {
-          try {
-            grecaptcha.reset();
-            renderRecaptcha();
-          } catch (e) {
-            console.warn("Intento de reset fallido:", e.message);
-          }
-        }
       },
     };
   },
 };
 
-// Registrar widget en LEAP
+// Registrar widget
 nitro.registerWidget(recaptchaWidgetDefinition);
