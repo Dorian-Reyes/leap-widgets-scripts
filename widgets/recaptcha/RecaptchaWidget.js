@@ -84,10 +84,15 @@ const recaptchaWidgetDefinition = {
       },
       validateValue: () => {
         const isRequired = !!initialProps.required; // forzamos booleano
+        console.log("Acabamos de forzar el booleano:", isRequired);
         if (isRequired && (!token || token.trim() === "")) {
           return "Por favor, verifica el reCAPTCHA"; // bloquea envío
+        } else {
+          console.log("El token es:", token);
+          console.log("El token es valido:", token !== "");
+          console.log("El valor de isRequired es:", isRequired);
+          // return null; // token presente → válido
         }
-        return null; // token presente → válido
       },
       setProperty: (propName, propValue) => {
         if (propName === "siteKey") {
