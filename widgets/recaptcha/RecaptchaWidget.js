@@ -50,7 +50,8 @@ const recaptchaWidgetDefinition = {
 
         if (window.grecaptcha && grecaptcha.render) {
           try {
-            grecaptcha.render(this._widgetId, {
+            // PASAR NODO en vez de ID
+            grecaptcha.render(this._containerNode, {
               sitekey: this._siteKey,
               callback: (responseToken) => {
                 this._token = responseToken;
@@ -64,7 +65,6 @@ const recaptchaWidgetDefinition = {
           setTimeout(() => this._renderRecaptcha(attempt + 1), DELAY_MS);
         }
       },
-
       // Permite cambiar propiedades dinámicamente
       setProperty: function (propName, propValue) {
         switch (propName) {
