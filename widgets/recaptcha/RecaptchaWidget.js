@@ -20,6 +20,7 @@ const recaptchaWidgetDefinition = {
 
   instantiate: function (context, domNode, initialProps, eventManager) {
     const widgetInstance = {
+      // --- Variables internas ---
       _widgetId:
         "recaptcha_" +
         (context.dataId || Math.random().toString(36).substr(2, 9)),
@@ -27,9 +28,8 @@ const recaptchaWidgetDefinition = {
       _token: "",
       _siteKey: initialProps.siteKey,
 
-      // Inicializa DOM y reCAPTCHA
+      // --- Inicialización del widget ---
       _init: function () {
-        // Crear contenedor si no existe
         let container = document.getElementById(this._widgetId);
         if (!container) {
           container = document.createElement("div");
@@ -37,19 +37,10 @@ const recaptchaWidgetDefinition = {
           domNode.appendChild(container);
         }
         this._containerNode = container;
-
-        // Esperar a que el contenedor realmente exista en el DOM
-        const waitForContainer = () => {
-          if (document.body.contains(this._containerNode)) {
-            this._renderRecaptcha();
-          } else {
-            setTimeout(waitForContainer, 50);
-          }
-        };
-        waitForContainer();
+        this._renderRecaptcha();
       },
 
-      // Función robusta para renderizar reCAPTCHA
+      // --- Renderizado de reCAPTCHA con reintentos ---
       _renderRecaptcha: function (attempt = 0) {
         const MAX_ATTEMPTS = 10;
         const DELAY_MS = 500;
@@ -58,8 +49,7 @@ const recaptchaWidgetDefinition = {
 
         if (window.grecaptcha && grecaptcha.render) {
           try {
-            // PASAR ID en vez de nodo directo para compatibilidad máxima
-            grecaptcha.render(this._widgetId, {
+            grecaptcha.render(this._containerNode, {
               sitekey: this._siteKey,
               callback: (responseToken) => {
                 this._token = responseToken;
@@ -74,7 +64,7 @@ const recaptchaWidgetDefinition = {
         }
       },
 
-      // Permite cambiar propiedades dinámicamente
+      // --- Cambiar propiedades dinámicamente ---
       setProperty: function (propName, propValue) {
         switch (propName) {
           case "siteKey":
@@ -91,15 +81,16 @@ const recaptchaWidgetDefinition = {
         }
       },
 
-      // Exponer API para JS externo siguiendo convención
+      // --- API pública para JS externo ---
       getJSAPIFacade: function () {
-        const facade = {
-          __self: this,
+        const self = this;
+        return {
+          __self: self,
           getValue: function () {
-            return this.__self._token;
+            return self._token;
           },
           setValue: function (val) {
-            this.__self._token = val;
+            self._token = val;
           },
           validateValue: function (val) {
             if ((val === "" || val == null) && initialProps.required) {
@@ -108,20 +99,44 @@ const recaptchaWidgetDefinition = {
             return true;
           },
           setSiteKey: function (key) {
-            this.__self.setProperty("siteKey", key);
+            self.setProperty("siteKey", key);
           },
         };
-        return facade;
+      },
+
+      // --- Métodos requeridos por Leap (al primer nivel) ---
+      getValue: function () {
+        return this._token;
+      },
+      setValue: function (val) {
+        this._token = val;
+      },
+      validateValue: function (val) {
+        if ((val === "" || val == null) && initialProps.required) {
+          return "Por favor, verifica el reCAPTCHA";
+        }
+        return true;
       },
     };
 
-    // Inicializar widget
-    widgetInstance._init();
+    // --- Cargar script si no existe y luego inicializar ---
+    const existingScript = document.querySelector(
+      "script[src*='recaptcha/api.js']"
+    );
+    if (!existingScript) {
+      const script = document.createElement("script");
+      script.src = "https://www.google.com/recaptcha/api.js";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => widgetInstance._init();
+      document.head.appendChild(script);
+    } else {
+      widgetInstance._init();
+    }
 
-    // Retornar instancia para Leap
     return widgetInstance;
   },
 };
 
-// Registrar widget
+// Registrar widget en LEAP
 nitro.registerWidget(recaptchaWidgetDefinition);
