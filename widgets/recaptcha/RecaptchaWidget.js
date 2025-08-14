@@ -78,11 +78,16 @@ const recaptchaWidgetDefinition = {
         token = val;
       },
       validateValue: () => {
-        if (!token || token.trim() === "") {
-          // Aunque Leap diga que no es requerido, bloqueamos si no hay token
+        // Mientras no haya token, devolvemos error
+        if (initialProps.required && (!token || token.trim() === "")) {
           return "Por favor, verifica el reCAPTCHA";
+        } else {
+            console.log("Se deja pasar el envio y los valores son:");
+
+            console.log(" Propiedad requerida su valor es ",initialProps.required);
+            console.log("Valor del token:",token);
         }
-        // Token presente → campo válido
+        // Token válido → devuelve null para indicar que todo está bien
         return null;
       },
       setProperty: (propName, propValue) => {
