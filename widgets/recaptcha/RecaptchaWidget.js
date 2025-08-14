@@ -80,7 +80,13 @@ const recaptchaWidgetDefinition = {
       validateValue: () => {
         // Mientras no haya token, devolvemos error
         if (initialProps.required && (!token || token.trim() === "")) {
+            
           return "Por favor, verifica el reCAPTCHA";
+        } else {
+            console.log("Se deja pasar el envio y los valores son:");
+
+            console.log(" Propiedad requerida su valor es ",initialProps.required);
+            console.log("Valor del token:",token);
         }
         // Token válido → devuelve null para indicar que todo está bien
         return null;
