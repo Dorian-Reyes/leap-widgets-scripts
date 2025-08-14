@@ -38,7 +38,15 @@ const recaptchaWidgetDefinition = {
         }
         this._containerNode = container;
 
-        this._renderRecaptcha();
+        // Esperar a que el contenedor realmente exista en el DOM
+        const waitForContainer = () => {
+          if (document.body.contains(this._containerNode)) {
+            this._renderRecaptcha();
+          } else {
+            setTimeout(waitForContainer, 50);
+          }
+        };
+        waitForContainer();
       },
 
       // Función robusta para renderizar reCAPTCHA
@@ -50,8 +58,8 @@ const recaptchaWidgetDefinition = {
 
         if (window.grecaptcha && grecaptcha.render) {
           try {
-            // PASAR NODO en vez de ID
-            grecaptcha.render(this._containerNode, {
+            // PASAR ID en vez de nodo directo para compatibilidad máxima
+            grecaptcha.render(this._widgetId, {
               sitekey: this._siteKey,
               callback: (responseToken) => {
                 this._token = responseToken;
@@ -65,6 +73,7 @@ const recaptchaWidgetDefinition = {
           setTimeout(() => this._renderRecaptcha(attempt + 1), DELAY_MS);
         }
       },
+
       // Permite cambiar propiedades dinámicamente
       setProperty: function (propName, propValue) {
         switch (propName) {
