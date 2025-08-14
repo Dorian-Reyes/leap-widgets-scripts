@@ -19,107 +19,49 @@ const recaptchaWidgetDefinition = {
   ],
 
   instantiate: function (context, domNode, initialProps, eventManager) {
-    const widgetInstance = {
-      // --- Variables internas ---
-      _widgetId:
-        "recaptcha_" +
-        (context.dataId || Math.random().toString(36).substr(2, 9)),
-      _containerNode: null,
-      _token: "",
-      _siteKey: initialProps.siteKey,
+    // --- Variables internas ---
+    const widgetId =
+      "recaptcha_" +
+      (context.dataId || Math.random().toString(36).substr(2, 9));
+    let token = "";
+    let container = null;
 
-      // --- Inicialización del widget ---
-      _init: function () {
-        let container = document.getElementById(this._widgetId);
-        if (!container) {
-          container = document.createElement("div");
-          container.id = this._widgetId;
-          domNode.appendChild(container);
+    // --- Método obligatorio _init ---
+    function _init() {
+      container = document.getElementById(widgetId);
+      if (!container) {
+        container = document.createElement("div");
+        container.id = widgetId;
+        domNode.appendChild(container);
+      }
+      _renderRecaptcha();
+    }
+
+    // --- Renderizado robusto de reCAPTCHA ---
+    function _renderRecaptcha(attempt = 0) {
+      const MAX_ATTEMPTS = 10;
+      const DELAY_MS = 500;
+
+      if (!container) return;
+
+      if (window.grecaptcha && grecaptcha.render) {
+        try {
+          grecaptcha.render(widgetId, {
+            sitekey: initialProps.siteKey,
+            callback: function (responseToken) {
+              token = responseToken;
+              eventManager.fireEvent("onChange");
+            },
+          });
+        } catch (e) {
+          console.error("Error al renderizar reCAPTCHA:", e.message);
         }
-        this._containerNode = container;
-        this._renderRecaptcha();
-      },
+      } else if (attempt < MAX_ATTEMPTS) {
+        setTimeout(() => _renderRecaptcha(attempt + 1), DELAY_MS);
+      }
+    }
 
-      // --- Renderizado de reCAPTCHA con reintentos ---
-      _renderRecaptcha: function (attempt = 0) {
-        const MAX_ATTEMPTS = 10;
-        const DELAY_MS = 500;
-
-        if (!this._containerNode) return;
-
-        if (window.grecaptcha && grecaptcha.render) {
-          try {
-            grecaptcha.render(this._containerNode, {
-              sitekey: this._siteKey,
-              callback: (responseToken) => {
-                this._token = responseToken;
-                eventManager.fireEvent("onChange");
-              },
-            });
-          } catch (e) {
-            console.error("Error al renderizar reCAPTCHA:", e.message);
-          }
-        } else if (attempt < MAX_ATTEMPTS) {
-          setTimeout(() => this._renderRecaptcha(attempt + 1), DELAY_MS);
-        }
-      },
-
-      // --- Cambiar propiedades dinámicamente ---
-      setProperty: function (propName, propValue) {
-        switch (propName) {
-          case "siteKey":
-            this._siteKey = propValue;
-            if (window.grecaptcha && this._containerNode) {
-              try {
-                grecaptcha.reset();
-                this._renderRecaptcha();
-              } catch (e) {
-                console.warn("Intento de reset fallido:", e.message);
-              }
-            }
-            break;
-        }
-      },
-
-      // --- API pública para JS externo ---
-      getJSAPIFacade: function () {
-        const self = this;
-        return {
-          __self: self,
-          getValue: function () {
-            return self._token;
-          },
-          setValue: function (val) {
-            self._token = val;
-          },
-          validateValue: function (val) {
-            if ((val === "" || val == null) && initialProps.required) {
-              return "Por favor, verifica el reCAPTCHA";
-            }
-            return true;
-          },
-          setSiteKey: function (key) {
-            self.setProperty("siteKey", key);
-          },
-        };
-      },
-
-      // --- Métodos requeridos por Leap (al primer nivel) ---
-      getValue: function () {
-        return this._token;
-      },
-      setValue: function (val) {
-        this._token = val;
-      },
-      validateValue: function (val) {
-        if ((val === "" || val == null) && initialProps.required) {
-          return "Por favor, verifica el reCAPTCHA";
-        }
-        return true;
-      },
-    };
-
-    // --- Cargar script si no existe y luego inicializar ---
+    // --- Cargar script si no existe ---
     const existingScript = document.querySelector(
       "script[src*='recaptcha/api.js']"
     );
@@ -128,15 +70,41 @@ const recaptchaWidgetDefinition = {
       script.src = "https://www.google.com/recaptcha/api.js";
       script.async = true;
       script.defer = true;
-      script.onload = () => widgetInstance._init();
+      script.onload = _init;
       document.head.appendChild(script);
     } else {
-      widgetInstance._init();
+      _init();
     }
 
-    return widgetInstance;
+    // --- Instancia final que devuelve Leap ---
+    return {
+      _init, // Obligatorio
+      getValue: () => token,
+      setValue: (val) => {
+        token = val;
+      },
+      validateValue: (val) => {
+        if ((val === "" || val == null) && initialProps.required) {
+          return "Por favor, verifica el reCAPTCHA";
+        }
+        return true;
+      },
+      setProperty: (propName, propValue) => {
+        if (propName === "siteKey") {
+          initialProps.siteKey = propValue;
+          if (window.grecaptcha && container) {
+            try {
+              grecaptcha.reset();
+              _renderRecaptcha();
+            } catch (e) {
+              console.warn("Intento de reset fallido:", e.message);
+            }
+          }
+        }
+      },
+    };
   },
 };
 
-// Registrar widget en LEAP
+// Registrar widget
 nitro.registerWidget(recaptchaWidgetDefinition);
