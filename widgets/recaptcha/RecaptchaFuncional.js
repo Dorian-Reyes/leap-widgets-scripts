@@ -1,4 +1,3 @@
-// RecaptchaWidget.js
 const recaptchaWidgetDefinition = {
   id: "custom.Recaptcha",
   version: "2.0.0",
@@ -6,8 +5,8 @@ const recaptchaWidgetDefinition = {
   label: "Google reCAPTCHA",
   description: "Verificación anti-bots con Google reCAPTCHA",
   datatype: { type: "string" }, // devuelve el token del CAPTCHA
-  category: { id: "custom.security", label: "Widgets personalizados" }, // Paleta “Seguridad”
-  iconClassName: "recaptcha-icon", // icono (FontAwesome)
+  category: { id: "custom.security", label: "Widgets personalizados" },
+  iconClassName: "recaptcha-icon",
   builtInProperties: [{ id: "required" }, { id: "title" }],
   properties: [
     {
@@ -22,7 +21,6 @@ const recaptchaWidgetDefinition = {
       "recaptcha_" +
       (context.dataId || Math.random().toString(36).substr(2, 9));
 
-    // Creamos el contenedor si no existe
     let container = document.getElementById(widgetId);
     if (!container) {
       container = document.createElement("div");
@@ -32,7 +30,6 @@ const recaptchaWidgetDefinition = {
 
     let token = "";
 
-    // Función robusta para renderizar con reintento si grecaptcha o el contenedor no están listos
     function renderRecaptcha(attempt = 0) {
       const MAX_ATTEMPTS = 10;
       const DELAY_MS = 500;
@@ -41,7 +38,7 @@ const recaptchaWidgetDefinition = {
 
       if (!captchaContainer) {
         console.warn(
-          `Intento ${attempt}: Contenedor con ID '${widgetId}' aún no disponible`
+          `[reCAPTCHA] Intento ${attempt}: Contenedor '${widgetId}' aún no disponible`
         );
         if (attempt < MAX_ATTEMPTS) {
           setTimeout(() => renderRecaptcha(attempt + 1), DELAY_MS);
@@ -51,61 +48,80 @@ const recaptchaWidgetDefinition = {
 
       if (window.grecaptcha && grecaptcha.render) {
         try {
+          console.log("[reCAPTCHA] Renderizando captcha en", widgetId);
           grecaptcha.render(widgetId, {
             sitekey: initialProps.siteKey,
             callback: function (responseToken) {
               token = responseToken;
-              eventManager.fireEvent("onChange"); // Notifica a Leap que hubo un cambio
+              console.log("[reCAPTCHA] callback ejecutado, token =", token);
+              eventManager.fireEvent("onChange");
+              console.log("[reCAPTCHA] onChange disparado después de validar");
             },
           });
         } catch (e) {
-          console.error("Error al renderizar reCAPTCHA:", e.message);
+          console.error("[reCAPTCHA] Error al renderizar:", e.message);
         }
       } else {
-        console.warn(`Intento ${attempt}: grecaptcha aún no está disponible`);
+        console.warn(
+          `[reCAPTCHA] Intento ${attempt}: grecaptcha aún no disponible`
+        );
         if (attempt < MAX_ATTEMPTS) {
           setTimeout(() => renderRecaptcha(attempt + 1), DELAY_MS);
         }
       }
     }
 
-    // Si grecaptcha ya está en la ventana, renderizamos de inmediato
     if (window.grecaptcha && grecaptcha.render) {
       renderRecaptcha();
     } else {
-      // Cargamos el script de reCAPTCHA dinámicamente
       const existingScript = document.querySelector(
         "script[src*='recaptcha/api.js']"
       );
       if (!existingScript) {
+        console.log("[reCAPTCHA] Cargando script api.js dinámicamente");
         const script = document.createElement("script");
         script.src = "https://www.google.com/recaptcha/api.js";
         script.async = true;
         script.defer = true;
         script.onload = () => {
+          console.log("[reCAPTCHA] Script cargado, renderizando...");
           renderRecaptcha();
         };
         document.head.appendChild(script);
       } else {
-        // Si ya existe pero no ha cargado, intentamos en bucle
         renderRecaptcha();
       }
     }
 
     return {
       getValue: function () {
+        console.log("[reCAPTCHA] getValue() llamado, valor =", token);
         return token;
       },
       setValue: function (val) {
         token = val;
+        console.log("[reCAPTCHA] setValue() llamado, nuevo valor =", token);
+        eventManager.fireEvent("onChange");
+        console.log("[reCAPTCHA] onChange disparado desde setValue()");
       },
       validateValue: function (val) {
+        console.log(
+          "[reCAPTCHA] validateValue() llamado, val =",
+          val,
+          "required =",
+          initialProps.required
+        );
         if ((val === "" || val == null) && initialProps.required) {
+          console.warn("[reCAPTCHA] Validación fallida: campo requerido vacío");
           return "Por favor, verifica el reCAPTCHA";
         }
-        return true;
+        console.log("[reCAPTCHA] Validación exitosa");
+        return null; // importante: null significa válido
       },
       setProperty: function (propName, propValue) {
+        console.log(
+          `[reCAPTCHA] setProperty() llamado para ${propName} = ${propValue}`
+        );
         if (propName === "siteKey") {
           initialProps.siteKey = propValue;
           const captchaContainer = document.getElementById(widgetId);
@@ -113,8 +129,9 @@ const recaptchaWidgetDefinition = {
             try {
               grecaptcha.reset();
               renderRecaptcha();
+              console.log("[reCAPTCHA] Captcha reseteado y re-renderizado");
             } catch (e) {
-              console.warn("Intento de reset fallido:", e.message);
+              console.warn("[reCAPTCHA] Reset fallido:", e.message);
             }
           }
         }
@@ -122,5 +139,5 @@ const recaptchaWidgetDefinition = {
     };
   },
 };
-// Registrar el widget en LEAP
+
 nitro.registerWidget(recaptchaWidgetDefinition);
