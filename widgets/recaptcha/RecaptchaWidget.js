@@ -16,8 +16,9 @@ const recaptchaWidgetDefinition = {
     const widgetId =
       "recaptcha_" +
       (context.dataId || Math.random().toString(36).substr(2, 9));
-    const SITE_KEY = "6Ld6zxArAAAAAPDYDDPDAOfjpZguznwnM8m5W7vd"; // Contenedor del CAPTCHA
+    const SITE_KEY = "6Ld6zxArAAAAAPDYDDPDAOfjpZguznwnM8m5W7vd";
 
+    // Contenedor del CAPTCHA
     let container = document.getElementById(widgetId);
     if (!container) {
       container = document.createElement("div");
@@ -73,8 +74,9 @@ const recaptchaWidgetDefinition = {
       } else {
         renderRecaptcha();
       }
-    } // Inicializa // CAMBIO CLAVE: Usa el contexto para determinar el modo de ejecución
+    }
 
+    // AHORA USAMOS 'context.mode' EN LUGAR DE 'context.isDesignMode()'
     if (context.mode === "design") {
       // En modo de diseño, solo muestra un mensaje de placeholder
       domNode.innerHTML = "<div>reCAPTCHA Widget Placeholder</div>";
@@ -96,9 +98,7 @@ const recaptchaWidgetDefinition = {
         }
         return null;
       },
-      setProperty: function (propName, propValue) {
-        // Lógica para manejar cambios de propiedades, si fuera necesario
-      },
+      setProperty: function (propName, propValue) {},
     };
   },
 };
