@@ -16,18 +16,14 @@ const recaptchaWidgetDefinition = {
     const widgetId =
       "recaptcha_" +
       (context.dataId || Math.random().toString(36).substr(2, 9));
-    const SITE_KEY = "6Ld6zxArAAAAAPDYDDPDAOfjpZguznwnM8m5W7vd";
+    const SITE_KEY = "6Ld6zxArAAAAAPDYDDPDAOfjpZguznwnM8m5W7vd"; // Contenedor del CAPTCHA
 
-    // Contenedor del CAPTCHA
     let container = document.getElementById(widgetId);
     if (!container) {
       container = document.createElement("div");
       container.id = widgetId;
       domNode.appendChild(container);
     }
-
-    // La variable para el valor del campo la manejará Leap, no localmente.
-    // El contexto de Leap es el punto de referencia para el valor del campo.
 
     function renderRecaptcha(attempt = 0) {
       const MAX_ATTEMPTS = 10;
@@ -46,12 +42,10 @@ const recaptchaWidgetDefinition = {
           grecaptcha.render(widgetId, {
             sitekey: SITE_KEY,
             callback: function (responseToken) {
-              // *** CAMBIO CLAVE: NOTIFICA A LEAP DEL NUEVO VALOR ***
               context.setValue(responseToken);
               eventManager.fireEvent("onChange");
             },
             "expired-callback": function () {
-              // *** CAMBIO CLAVE: RESETEA EL VALOR A VACÍO EN LEAP ***
               context.setValue("");
               eventManager.fireEvent("onChange");
             },
@@ -79,10 +73,9 @@ const recaptchaWidgetDefinition = {
       } else {
         renderRecaptcha();
       }
-    }
+    } // Inicializa // CAMBIO CLAVE: Usa el contexto para determinar el modo de ejecución
 
-    // Inicializa
-    if (context.isDesignMode()) {
+    if (context.mode === "design") {
       // En modo de diseño, solo muestra un mensaje de placeholder
       domNode.innerHTML = "<div>reCAPTCHA Widget Placeholder</div>";
     } else {
@@ -90,16 +83,14 @@ const recaptchaWidgetDefinition = {
       loadRecaptchaScript();
     }
 
-    // La API del widget debe interactuar con el contexto de Leap para los datos
     return {
       getValue: function () {
-        return context.getValue(); // Obtiene el valor directamente del contexto
+        return context.getValue();
       },
       setValue: function (val) {
-        context.setValue(val); // Establece el valor directamente en el contexto
+        context.setValue(val);
       },
       validateValue: function (val) {
-        // La validación funciona ahora que 'val' es el valor real del contexto.
         if (initialProps.required && (!val || val.length === 0)) {
           return "Por favor, verifique el reCAPTCHA.";
         }
