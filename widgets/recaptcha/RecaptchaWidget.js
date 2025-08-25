@@ -5,22 +5,17 @@ const recaptchaWidgetDefinition = {
   apiVersion: "1.0.0",
   label: "Google reCAPTCHA",
   description: "Verificación anti-bots con Google reCAPTCHA",
-  datatype: { type: "string" }, // El token será un string
+  datatype: { type: "string" },
   category: { id: "custom.security", label: "Widgets personalizados" },
   iconClassName: "recaptcha-icon",
 
-  // Solo propiedades internas de Leap: required y título
   builtInProperties: [{ id: "required" }, { id: "title" }],
-
-  // No exponemos siteKey ni token en propiedades
   properties: [],
 
   instantiate: function (context, domNode, initialProps, eventManager) {
     const widgetId =
       "recaptcha_" +
       (context.dataId || Math.random().toString(36).substr(2, 9));
-
-    // Clave del sitio quemada
     const SITE_KEY = "6Ld6zxArAAAAAPDYDDPDAOfjpZguznwnM8m5W7vd";
 
     // Contenedor del CAPTCHA
@@ -31,17 +26,14 @@ const recaptchaWidgetDefinition = {
       domNode.appendChild(container);
     }
 
-    // Variable para almacenar el token
-    let token = "";
+    // La variable para el valor del campo la manejará Leap, no localmente.
+    // El contexto de Leap es el punto de referencia para el valor del campo.
 
-    /**
-     * Renderiza el reCAPTCHA con reintentos si aún no está listo
-     */
     function renderRecaptcha(attempt = 0) {
       const MAX_ATTEMPTS = 10;
       const DELAY_MS = 500;
-
       const captchaContainer = document.getElementById(widgetId);
+
       if (!captchaContainer) {
         if (attempt < MAX_ATTEMPTS) {
           setTimeout(() => renderRecaptcha(attempt + 1), DELAY_MS);
@@ -54,11 +46,13 @@ const recaptchaWidgetDefinition = {
           grecaptcha.render(widgetId, {
             sitekey: SITE_KEY,
             callback: function (responseToken) {
-              token = responseToken; // Guardamos token recibido
-              eventManager.fireEvent("onChange"); // Notifica a Leap que cambió el valor
+              // *** CAMBIO CLAVE: NOTIFICA A LEAP DEL NUEVO VALOR ***
+              context.setValue(responseToken);
+              eventManager.fireEvent("onChange"); 
             },
             "expired-callback": function () {
-              token = ""; // Resetea si expira
+              // *** CAMBIO CLAVE: RESETEA EL VALOR A VACÍO EN LEAP ***
+              context.setValue("");
               eventManager.fireEvent("onChange");
             },
           });
@@ -70,9 +64,6 @@ const recaptchaWidgetDefinition = {
       }
     }
 
-    /**
-     * Carga el script de reCAPTCHA si no está presente
-     */
     function loadRecaptchaScript() {
       const existingScript = document.querySelector(
         "script[src*='recaptcha/api.js']"
@@ -91,28 +82,31 @@ const recaptchaWidgetDefinition = {
     }
 
     // Inicializa
-    if (window.grecaptcha && grecaptcha.render) {
-      renderRecaptcha();
+    if (context.isDesignMode()) {
+      // En modo de diseño, solo muestra un mensaje de placeholder
+      domNode.innerHTML = "<div>reCAPTCHA Widget Placeholder</div>";
     } else {
+      // En modo de ejecución, carga el script
       loadRecaptchaScript();
     }
 
-    // API que Leap espera de un widget con valor
+    // La API del widget debe interactuar con el contexto de Leap para los datos
     return {
       getValue: function () {
-        return token;
+        return context.getValue(); // Obtiene el valor directamente del contexto
       },
       setValue: function (val) {
-        token = val;
+        context.setValue(val); // Establece el valor directamente en el contexto
       },
       validateValue: function (val) {
-        if ((!val || val === "") && initialProps.required) {
-          return "Por favor, verifica el reCAPTCHA";
+        // La validación funciona ahora que 'val' es el valor real del contexto.
+        if (initialProps.required && (!val || val.length === 0)) {
+          return "Por favor, verifique el reCAPTCHA.";
         }
         return true;
       },
-      setProperty: function () {
-        // No necesitamos reaccionar a propiedades, ya que no hay configurables
+      setProperty: function (propName, propValue) {
+        // Lógica para manejar cambios de propiedades, si fuera necesario
       },
     };
   },
