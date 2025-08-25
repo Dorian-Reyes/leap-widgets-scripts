@@ -5,17 +5,22 @@ const recaptchaWidgetDefinition = {
   apiVersion: "1.0.0",
   label: "Google reCAPTCHA",
   description: "Verificación anti-bots con Google reCAPTCHA",
-  datatype: { type: "string" },
+  datatype: { type: "string" }, // El token será un string
   category: { id: "custom.security", label: "Widgets personalizados" },
   iconClassName: "recaptcha-icon",
 
+  // Solo propiedades internas de Leap: required y título
   builtInProperties: [{ id: "required" }, { id: "title" }],
+
+  // No exponemos siteKey ni token en propiedades configurables
   properties: [],
 
   instantiate: function (context, domNode, initialProps, eventManager) {
     const widgetId =
       "recaptcha_" +
       (context.dataId || Math.random().toString(36).substr(2, 9));
+
+    // Clave del sitio quemada
     const SITE_KEY = "6Ld6zxArAAAAAPDYDDPDAOfjpZguznwnM8m5W7vd";
 
     // Contenedor del CAPTCHA
@@ -26,11 +31,17 @@ const recaptchaWidgetDefinition = {
       domNode.appendChild(container);
     }
 
+    // Variable para almacenar el token
+    let token = "";
+
+    /**
+     * Renderiza el reCAPTCHA con reintentos si aún no está listo
+     */
     function renderRecaptcha(attempt = 0) {
       const MAX_ATTEMPTS = 10;
       const DELAY_MS = 500;
-      const captchaContainer = document.getElementById(widgetId);
 
+      const captchaContainer = document.getElementById(widgetId);
       if (!captchaContainer) {
         if (attempt < MAX_ATTEMPTS) {
           setTimeout(() => renderRecaptcha(attempt + 1), DELAY_MS);
@@ -43,11 +54,11 @@ const recaptchaWidgetDefinition = {
           grecaptcha.render(widgetId, {
             sitekey: SITE_KEY,
             callback: function (responseToken) {
-              context.setValue(responseToken);
-              eventManager.fireEvent("onChange");
+              token = responseToken; // Guardamos token recibido
+              eventManager.fireEvent("onChange"); // Notifica a Leap que cambió el valor
             },
             "expired-callback": function () {
-              context.setValue("");
+              token = ""; // Resetea si expira
               eventManager.fireEvent("onChange");
             },
           });
@@ -59,6 +70,9 @@ const recaptchaWidgetDefinition = {
       }
     }
 
+    /**
+     * Carga el script de reCAPTCHA si no está presente
+     */
     function loadRecaptchaScript() {
       const existingScript = document.querySelector(
         "script[src*='recaptcha/api.js']"
@@ -76,29 +90,33 @@ const recaptchaWidgetDefinition = {
       }
     }
 
-    // AHORA USAMOS 'context.mode' EN LUGAR DE 'context.isDesignMode()'
-    if (context.mode === "design") {
-      // En modo de diseño, solo muestra un mensaje de placeholder
-      domNode.innerHTML = "<div>reCAPTCHA Widget Placeholder</div>";
+    // Inicializa
+    if (window.grecaptcha && grecaptcha.render) {
+      renderRecaptcha();
     } else {
-      // En modo de ejecución, carga el script
       loadRecaptchaScript();
     }
 
+    // API que Leap espera de un widget con valor
     return {
       getValue: function () {
-        return context.getValue();
+        return token;
       },
       setValue: function (val) {
-        context.setValue(val);
+        token = val;
       },
-      validateValue: function (val) {
-        if (initialProps.required && (!val || val.length === 0)) {
-          return "Por favor, verifique el reCAPTCHA.";
+      // FUNCIÓN CORREGIDA
+      validateValue: function () {
+        if (initialProps.required) {
+          if (!token || token === "") {
+            return "Por favor, verifica el reCAPTCHA";
+          }
         }
-        return null;
+        return true;
       },
-      setProperty: function (propName, propValue) {},
+      setProperty: function () {
+        // No necesitamos reaccionar a propiedades, ya que no hay configurables
+      },
     };
   },
 };
