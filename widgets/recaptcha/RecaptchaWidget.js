@@ -46,10 +46,12 @@ const recaptchaWidgetDefinition = {
           grecaptcha.render(widgetId, {
             sitekey: SITE_KEY,
             callback: function (responseToken) {
+              // *** CAMBIO CLAVE: NOTIFICA A LEAP DEL NUEVO VALOR ***
               context.setValue(responseToken);
               eventManager.fireEvent("onChange");
             },
             "expired-callback": function () {
+              // *** CAMBIO CLAVE: RESETEA EL VALOR A VACÍO EN LEAP ***
               context.setValue("");
               eventManager.fireEvent("onChange");
             },
@@ -81,25 +83,26 @@ const recaptchaWidgetDefinition = {
 
     // Inicializa
     if (context.isDesignMode()) {
+      // En modo de diseño, solo muestra un mensaje de placeholder
       domNode.innerHTML = "<div>reCAPTCHA Widget Placeholder</div>";
     } else {
+      // En modo de ejecución, carga el script
       loadRecaptchaScript();
     }
 
     // La API del widget debe interactuar con el contexto de Leap para los datos
     return {
       getValue: function () {
-        return context.getValue();
+        return context.getValue(); // Obtiene el valor directamente del contexto
       },
       setValue: function (val) {
-        context.setValue(val);
+        context.setValue(val); // Establece el valor directamente en el contexto
       },
       validateValue: function (val) {
         // La validación funciona ahora que 'val' es el valor real del contexto.
         if (initialProps.required && (!val || val.length === 0)) {
           return "Por favor, verifique el reCAPTCHA.";
         }
-        // Cambio clave: Devuelve 'null' para indicar que el campo es válido.
         return null;
       },
       setProperty: function (propName, propValue) {
