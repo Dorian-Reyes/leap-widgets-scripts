@@ -26,6 +26,8 @@ const recaptchaWidgetDefinition = {
   ],
 
   instantiate: function (context, domNode, initialProps, eventManager) {
+    console.log("===== [RecaptchaWidget] Instanciando Widget =====");
+
     const widgetId =
       "recaptcha_" +
       (context.dataId || Math.random().toString(36).substr(2, 9));
@@ -47,7 +49,11 @@ const recaptchaWidgetDefinition = {
         DELAY = 500;
 
       if (!container) return;
+
       if (!window.grecaptcha || !grecaptcha.render) {
+        console.warn(
+          `[RecaptchaWidget] grecaptcha aún no cargado. Reintento (${attempt}/${MAX})`
+        );
         if (attempt < MAX) {
           setTimeout(() => renderRecaptcha(attempt + 1), DELAY);
         }
@@ -55,16 +61,28 @@ const recaptchaWidgetDefinition = {
       }
 
       try {
+        console.log("[RecaptchaWidget] Renderizando reCAPTCHA...");
         grecaptcha.render(widgetId, {
           sitekey: initialProps.siteKey,
           callback: function (responseToken) {
+            console.log(
+              "[RecaptchaWidget] Token recibido del captcha:",
+              responseToken
+            );
+
             token = responseToken;
             initialProps.token = token;
 
-            // Token recibido → limpiar error
-            if (errorFn) errorFn(null);
+            // Limpiar error
+            if (errorFn) {
+              console.log("[RecaptchaWidget] limpiando error (token recibido)");
+              errorFn(null);
+            }
 
             // Notificar a LEAP
+            console.log(
+              "[RecaptchaWidget] Disparando eventManager.onChange() para informar nuevo estado"
+            );
             eventManager.fireEvent("onChange");
           },
         });
@@ -76,51 +94,89 @@ const recaptchaWidgetDefinition = {
     // Cargar script si no existe
     const existing = document.querySelector("script[src*='recaptcha/api.js']");
     if (!existing) {
+      console.log("[RecaptchaWidget] Cargando script de Google reCAPTCHA...");
       const script = document.createElement("script");
       script.src = "https://www.google.com/recaptcha/api.js";
       script.async = true;
       script.defer = true;
-      script.onload = () => renderRecaptcha();
+      script.onload = () => {
+        console.log("[RecaptchaWidget] Script de reCAPTCHA cargado");
+        renderRecaptcha();
+      };
       document.head.appendChild(script);
     } else {
+      console.log(
+        "[RecaptchaWidget] Script reCAPTCHA ya existente. Renderizando..."
+      );
       renderRecaptcha();
     }
 
     return {
-      getValue: () => token,
+      getValue: () => {
+        console.log("[RecaptchaWidget] getValue() →", token);
+        return token;
+      },
 
       setValue: (val) => {
+        console.log("[RecaptchaWidget] setValue():", val);
         token = val;
         initialProps.token = val;
       },
 
       validateValue: () => {
-        if (initialProps.required && (!token || token.trim() === "")) {
-          if (errorFn) errorFn("Por favor verifica el reCAPTCHA");
+        console.log("===== [RecaptchaWidget] Ejecutando validateValue() =====");
+        console.log("[RecaptchaWidget] required:", initialProps.required);
+        console.log("[RecaptchaWidget] token actual:", token);
+
+        const isEmpty = !token || token.trim() === "";
+
+        if (initialProps.required && isEmpty) {
+          console.warn(
+            "[RecaptchaWidget] VALIDACIÓN FALLIDA → token vacío y campo requerido"
+          );
+          if (errorFn) errorFn("Por favor verifica el reCAPTCHA (token vacío)");
           return "Por favor verifica el reCAPTCHA";
         }
 
+        console.log(
+          "[RecaptchaWidget] VALIDACIÓN CORRECTA → token válido o campo no requerido"
+        );
         if (errorFn) errorFn(null);
         return null;
       },
 
       setProperty: (propName, propValue) => {
+        console.log(`[RecaptchaWidget] setProperty(${propName}):`, propValue);
+
         if (propName === "siteKey") {
           initialProps.siteKey = propValue;
+
           if (window.grecaptcha && container) {
             try {
+              console.log("[RecaptchaWidget] Reset y re-render de reCAPTCHA");
               grecaptcha.reset();
               renderRecaptcha();
-            } catch (e) {}
+            } catch (e) {
+              console.warn(
+                "[RecaptchaWidget] No se pudo hacer reset del captcha:",
+                e.message
+              );
+            }
           }
         }
       },
 
       setRequired: (r) => {
+        console.log(
+          `[RecaptchaWidget] setRequired(${r}) → LEAP marcó este widget como ${
+            r ? "OBLIGATORIO" : "NO OBLIGATORIO"
+          }`
+        );
         initialProps.required = r;
       },
 
       setErrorMessage: (fn) => {
+        console.log("[RecaptchaWidget] setErrorMessage() asignado");
         errorFn = fn;
       },
     };
