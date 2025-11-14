@@ -55,8 +55,20 @@ const recaptchaWidgetDefinition = {
             sitekey: initialProps.siteKey,
             callback: function (responseToken) {
               token = responseToken; // actualizamos token
+              console.log(
+                "Hemos recibido el token correctamente de catpcha:",
+                token
+              );
               initialProps.token = token; // sincronizamos con la propiedad
+              console.log(
+                "Hemos sincronizado el toke, el valor de la propiedad inicial es:",
+                initialProps.token
+              );
               eventManager.fireEvent("onChange"); // Leap reevalúa el campo obligatorio
+              console.log(
+                "Hemos disparado el evento onChange y nos arroja lo siguiente",
+                eventManager.fireEvent("onChange")
+              );
             },
           });
         } catch (e) {
