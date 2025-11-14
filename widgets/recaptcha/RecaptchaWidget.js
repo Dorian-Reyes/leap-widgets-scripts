@@ -34,6 +34,7 @@ const recaptchaWidgetDefinition = {
 
     let token = "";
     let errorFn = null;
+    let lastValidationResult = null;
 
     // Crear contenedor
     let container = document.getElementById(widgetId);
@@ -73,15 +74,16 @@ const recaptchaWidgetDefinition = {
             token = responseToken;
             initialProps.token = token;
 
-            // Limpiar error
+            // Limpia error
             if (errorFn) {
-              console.log("[RecaptchaWidget] limpiando error (token recibido)");
+              console.log(
+                "[RecaptchaWidget] limpiando error (token recibido: válido)"
+              );
               errorFn(null);
             }
 
-            // Notificar a LEAP
             console.log(
-              "[RecaptchaWidget] Disparando eventManager.onChange() para informar nuevo estado"
+              "[RecaptchaWidget] Disparando eventManager.onChange() para informar nuevo estado..."
             );
             eventManager.fireEvent("onChange");
           },
@@ -100,7 +102,7 @@ const recaptchaWidgetDefinition = {
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        console.log("[RecaptchaWidget] Script de reCAPTCHA cargado");
+        console.log("[RecaptchaWidget] Script de reCAPTCHA cargado ✔️");
         renderRecaptcha();
       };
       document.head.appendChild(script);
@@ -129,20 +131,48 @@ const recaptchaWidgetDefinition = {
         console.log("[RecaptchaWidget] token actual:", token);
 
         const isEmpty = !token || token.trim() === "";
+        let result = null;
 
         if (initialProps.required && isEmpty) {
           console.warn(
             "[RecaptchaWidget] VALIDACIÓN FALLIDA → token vacío y campo requerido"
           );
-          if (errorFn) errorFn("Por favor verifica el reCAPTCHA (token vacío)");
-          return "Por favor verifica el reCAPTCHA";
+
+          if (errorFn) {
+            console.log(
+              "[RecaptchaWidget] Mostrando mensaje de error a LEAP (token vacío)"
+            );
+            errorFn("Por favor verifica el reCAPTCHA (token vacío)");
+          }
+
+          result = "Por favor verifica el reCAPTCHA";
+        } else {
+          console.log(
+            "[RecaptchaWidget] VALIDACIÓN CORRECTA → token válido o campo no requerido"
+          );
+
+          if (errorFn) {
+            console.log(
+              "[RecaptchaWidget] Limpiando mensaje de error (validación exitosa)"
+            );
+            errorFn(null);
+          }
+
+          result = null;
         }
 
-        console.log(
-          "[RecaptchaWidget] VALIDACIÓN CORRECTA → token válido o campo no requerido"
-        );
-        if (errorFn) errorFn(null);
-        return null;
+        if (lastValidationResult !== result) {
+          console.log(
+            `[RecaptchaWidget] CAMBIO DE ESTADO DE VALIDACIÓN → Antes: ${lastValidationResult} | Ahora: ${result}`
+          );
+          lastValidationResult = result;
+        } else {
+          console.log(
+            `[RecaptchaWidget] Estado de validación SIN CAMBIOS → (${result})`
+          );
+        }
+
+        return result;
       },
 
       setProperty: (propName, propValue) => {
