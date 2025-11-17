@@ -93,7 +93,7 @@ const recaptchaWidgetDefinition = {
         grecaptcha.render(widgetId, {
           sitekey: initialProps.siteKey,
           callback: function (responseToken) {
-            console.log("[RecaptchaWidget] token recibido:", responseToken);
+            console.log("[RecaptchaWidget] token recibido:");
 
             token = responseToken;
 
@@ -102,7 +102,7 @@ const recaptchaWidgetDefinition = {
             // ============================================
             hiddenInput.value = token;
 
-            console.log(`[HiddenInput] actualizado → ${hiddenInput.value}`);
+            console.log(`[HiddenInput] actualizado → lo que hay en el input `);
 
             // Limpia error si lo había
             if (errorFn) errorFn(null);
@@ -157,9 +157,7 @@ const recaptchaWidgetDefinition = {
         token = val;
         hiddenInput.value = val;
 
-        console.log(
-          `[HiddenInput] actualizado desde setValue(): ${hiddenInput.value}`
-        );
+        console.log(`[HiddenInput] actualizado desde setValue()`);
       },
 
       validateValue: () => {
