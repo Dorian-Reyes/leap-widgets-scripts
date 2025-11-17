@@ -36,7 +36,9 @@ const recaptchaWidgetDefinition = {
     let errorFn = null;
     let lastValidationResult = null;
 
-    // Crear contenedor
+    // ============================================
+    // 1) Crear contenedor principal
+    // ============================================
     let container = document.getElementById(widgetId);
     if (!container) {
       container = document.createElement("div");
@@ -44,7 +46,24 @@ const recaptchaWidgetDefinition = {
       domNode.appendChild(container);
     }
 
+    // ============================================
+    // 2) CREAR INPUT HIDDEN PARA VALIDACIÓN DE LEAP
+    // ============================================
+    console.log("[HiddenInput] Creando input oculto para validación...");
+
+    const hiddenInput = document.createElement("input");
+    hiddenInput.type = "text";
+    hiddenInput.style.display = "none"; // como pediste, display none
+    hiddenInput.id = widgetId + "_hiddenInput";
+    hiddenInput.value = "";
+
+    domNode.appendChild(hiddenInput);
+
+    console.log(`[HiddenInput] Input oculto creado con id=${hiddenInput.id}`);
+
+    // ============================================
     // Renderizar reCAPTCHA
+    // ============================================
     function renderRecaptcha(attempt = 0) {
       const MAX = 10,
         DELAY = 500;
@@ -71,10 +90,18 @@ const recaptchaWidgetDefinition = {
               responseToken
             );
 
+            // ============================================
+            // ASIGNAR VALORES
+            // ============================================
             token = responseToken;
             initialProps.token = token;
 
-            // Limpia error
+            // Guardar token en input hidden
+            hiddenInput.value = token;
+            console.log(
+              `[HiddenInput] Asignado token al input oculto → ${hiddenInput.value}`
+            );
+
             if (errorFn) {
               console.log(
                 "[RecaptchaWidget] limpiando error (token recibido: válido)"
@@ -82,9 +109,6 @@ const recaptchaWidgetDefinition = {
               errorFn(null);
             }
 
-            console.log(
-              "[RecaptchaWidget] Disparando eventManager.onChange() para informar nuevo estado..."
-            );
             eventManager.fireEvent("onChange");
           },
         });
@@ -93,7 +117,9 @@ const recaptchaWidgetDefinition = {
       }
     }
 
+    // ============================================
     // Cargar script si no existe
+    // ============================================
     const existing = document.querySelector("script[src*='recaptcha/api.js']");
     if (!existing) {
       console.log("[RecaptchaWidget] Cargando script de Google reCAPTCHA...");
@@ -113,6 +139,9 @@ const recaptchaWidgetDefinition = {
       renderRecaptcha();
     }
 
+    // ============================================
+    // MÉTODOS DEL WIDGET
+    // ============================================
     return {
       getValue: () => {
         console.log("[RecaptchaWidget] getValue() →", token);
@@ -123,6 +152,10 @@ const recaptchaWidgetDefinition = {
         console.log("[RecaptchaWidget] setValue():", val);
         token = val;
         initialProps.token = val;
+
+        // Sincronizar input hidden
+        hiddenInput.value = val;
+        console.log(`[HiddenInput] setValue() actualiza input oculto: ${val}`);
       },
 
       validateValue: () => {
@@ -139,25 +172,16 @@ const recaptchaWidgetDefinition = {
           );
 
           if (errorFn) {
-            console.log(
-              "[RecaptchaWidget] Mostrando mensaje de error a LEAP (token vacío)"
-            );
             errorFn("Por favor verifica el reCAPTCHA (token vacío)");
           }
 
           result = "Por favor verifica el reCAPTCHA";
         } else {
           console.log(
-            "[RecaptchaWidget] VALIDACIÓN CORRECTA → token válido o campo no requerido"
+            "[RecaptchaWidget] VALIDACIÓN CORRECTA → token válido o no requerido"
           );
 
-          if (errorFn) {
-            console.log(
-              "[RecaptchaWidget] Limpiando mensaje de error (validación exitosa)"
-            );
-            errorFn(null);
-          }
-
+          if (errorFn) errorFn(null);
           result = null;
         }
 
