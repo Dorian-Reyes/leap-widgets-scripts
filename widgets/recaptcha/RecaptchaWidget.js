@@ -4,7 +4,12 @@ const recaptchaWidgetDefinition = {
   apiVersion: "1.0.0",
   label: "Google reCAPTCHA",
   description: "Verificación anti-bots con Google reCAPTCHA",
-  datatype: { type: "string" },
+  datatype: {
+    type: "string",
+    length: 2000, // margen amplio para el token
+    customDataType: "recaptcha-token",
+  },
+
   category: { id: "custom.security", label: "Widgets personalizados" },
   iconClassName: "recaptcha-icon",
   builtInProperties: [
@@ -66,9 +71,10 @@ const recaptchaWidgetDefinition = {
             token = responseToken;
             hiddenInput.value = token;
             if (errorFn) errorFn(null);
-            // Notificar a Leap de manera segura
-            if (context && typeof context.notifyChange === "function") {
-              context.notifyChange();
+
+            // Notificar a Leap que el valor cambió
+            if (eventManager && typeof eventManager.fireEvent === "function") {
+              eventManager.fireEvent("onChange");
             }
           },
         });
@@ -98,10 +104,11 @@ const recaptchaWidgetDefinition = {
       setValue: (val) => {
         token = val;
         hiddenInput.value = val;
-        if (context && typeof context.notifyChange === "function") {
-          context.notifyChange();
+        if (eventManager && typeof eventManager.fireEvent === "function") {
+          eventManager.fireEvent("onChange");
         }
       },
+
       validateValue: () => {
         const val = hiddenInput.value;
         const isEmpty = !val || val.trim() === "";
