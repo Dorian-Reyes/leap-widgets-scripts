@@ -7,9 +7,9 @@ const recaptchaWidgetDefinition = {
 
   // *** IMPORTANTE: esto hace que el widget sea "data widget" ***
   datatype: {
-    type: "string",
-    length: 2000,
+    dataType: "string",
     customDataType: "recaptcha-token",
+    length: 2000,
   },
 
   category: { id: "custom.security", label: "Widgets personalizados" },
