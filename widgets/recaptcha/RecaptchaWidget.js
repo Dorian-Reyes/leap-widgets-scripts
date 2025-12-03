@@ -5,11 +5,11 @@ const recaptchaWidgetDefinition = {
   label: "Google reCAPTCHA",
   description: "Verificación anti-bots con Google reCAPTCHA",
 
-  // *** IMPORTANTE: esto hace que el widget sea un DATA WIDGET ***
+  // Data widget correctamente declarado
   datatype: {
-    dataType: "string",
-    customDataType: "recaptcha-token",
+    type: "string", 
     length: 2000,
+    customDataType: "recaptcha-token",
   },
 
   category: { id: "custom.security", label: "Widgets personalizados" },
@@ -38,15 +38,15 @@ const recaptchaWidgetDefinition = {
       "recaptcha_" +
       (context.dataId || Math.random().toString(36).substr(2, 9));
 
-    let token = "";
+    let token = ""; // aquí guardamos SIEMPRE el valor real
     let errorFn = null;
 
-    // Contenedor del reCAPTCHA
+    // Contenedor que Google va a usar para dibujar el recaptcha
     const container = document.createElement("div");
     container.id = widgetId;
     domNode.appendChild(container);
 
-    // Notificar a Leap que cambió el valor
+    // Avisar a Leap que cambió el valor
     function notifyChanged() {
       if (eventManager && typeof eventManager.fireEvent === "function") {
         console.log("[RecaptchaWidget] fireEvent('onChange')");
@@ -54,17 +54,16 @@ const recaptchaWidgetDefinition = {
       }
     }
 
-    // Render reCAPTCHA
+    // Render de reCAPTCHA
     function renderRecaptcha(attempt = 0) {
-      const MAX = 20;
-      const DELAY = 300;
+      const MAX = 10;
+      const DELAY = 500;
 
       if (!window.grecaptcha || !grecaptcha.render) {
         if (attempt < MAX) {
           console.log(
-            `[RecaptchaWidget] grecaptcha no listo, reintento ${
-              attempt + 1
-            }/${MAX}`
+            "[RecaptchaWidget] grecaptcha no listo, reintento:",
+            attempt + 1
           );
           setTimeout(() => renderRecaptcha(attempt + 1), DELAY);
         }
@@ -73,7 +72,6 @@ const recaptchaWidgetDefinition = {
 
       try {
         console.log("[RecaptchaWidget] Llamando a grecaptcha.render");
-
         grecaptcha.render(widgetId, {
           sitekey: initialProps.siteKey,
           callback: function (responseToken) {
@@ -81,8 +79,7 @@ const recaptchaWidgetDefinition = {
               "[RecaptchaWidget] callback reCAPTCHA, token=",
               responseToken
             );
-            token = responseToken;
-
+            token = responseToken || "";
             if (errorFn) errorFn(null);
             notifyChanged();
           },
@@ -92,14 +89,13 @@ const recaptchaWidgetDefinition = {
       }
     }
 
-    // Cargar reCAPTCHA si no está
+    // Cargar script de Google si hace falta
     const existingScript = document.querySelector(
       "script[src*='recaptcha/api.js']"
     );
-
     if (!existingScript) {
       const script = document.createElement("script");
-      script.src = "https://www.google.com/recaptcha/api.js?render=explicit";
+      script.src = "https://www.google.com/recaptcha/api.js";
       script.async = true;
       script.defer = true;
       script.onload = () => renderRecaptcha();
@@ -108,7 +104,7 @@ const recaptchaWidgetDefinition = {
       renderRecaptcha();
     }
 
-    // === API PARA LEAP ===
+    // === API que Leap va a usar ===
     return {
       getDisplayTitle: () => initialProps.title || "Google reCAPTCHA",
 
@@ -123,31 +119,33 @@ const recaptchaWidgetDefinition = {
         notifyChanged();
       },
 
-      validateValue: () => {
-        const isEmpty = !token || token.trim() === "";
-        let msg = null;
+      // La doc dice: validateValue(val) -> true | false | 'mensaje'
+      validateValue: (val) => {
+        const current = typeof val === "string" ? val : token;
+        const isEmpty = !current || current.trim() === "";
 
         console.log(
-          `[RecaptchaWidget] validateValue, required=${initialProps.required} token=${token}`
+          "[RecaptchaWidget] validateValue, required=",
+          initialProps.required,
+          " value=",
+          current
         );
 
         if (initialProps.required && isEmpty) {
-          msg = "Por favor verifica el reCAPTCHA";
+          const msg = "Por favor verifica el reCAPTCHA";
           if (errorFn) errorFn(msg);
-        } else {
-          if (errorFn) errorFn(null);
+          return msg; // string = mensaje de error
         }
 
-        return msg;
+        if (errorFn) errorFn(null);
+        return true; // válido
       },
 
       setProperty: (propName, propValue) => {
         if (propName === "siteKey") {
           console.log("[RecaptchaWidget] setProperty siteKey:", propValue);
           initialProps.siteKey = propValue;
-
           token = "";
-
           if (window.grecaptcha && container) {
             try {
               grecaptcha.reset();
@@ -156,6 +154,9 @@ const recaptchaWidgetDefinition = {
               console.warn("[RecaptchaWidget] No se pudo resetear:", e);
             }
           }
+        } else if (propName === "required") {
+          // por si Leap nos la cambia via propiedades
+          initialProps.required = !!propValue;
         }
       },
 
@@ -169,6 +170,7 @@ const recaptchaWidgetDefinition = {
       },
 
       setErrorMessage: (fn) => {
+        // Leap nos pasa una función para pintar el error visual
         errorFn = (msg) => {
           console.log("[RecaptchaWidget] setErrorMessage callback, msg=", msg);
           fn(msg);
