@@ -4,7 +4,7 @@ const recaptchaWidgetDefinition = {
   apiVersion: "1.0.0",
   label: "Google reCAPTCHA",
   description: "Verificación anti-bots con Google reCAPTCHA",
-  datatype: { type: "string" },
+  datatype: { type: "string", length: 3000, customDataType: "recaptcha-token" },
   category: { id: "custom.security", label: "Widgets personalizados" },
   iconClassName: "recaptcha-icon",
 
@@ -108,7 +108,7 @@ const recaptchaWidgetDefinition = {
             if (errorFn) errorFn(null);
 
             // Notificar a LEAP del cambio
-            eventManager.fireEvent("onChange");
+            eventManager.sendEvent("onChange");
           },
         });
       } catch (e) {
