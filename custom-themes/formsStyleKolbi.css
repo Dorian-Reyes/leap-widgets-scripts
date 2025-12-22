@@ -164,7 +164,7 @@ html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 select {
   font-size: 1rem;
   font-weight: 400;
   border: 1px solid #4b4b4b;
-  max-width: 95% !important;
+  width: 100%;
   border-radius: 6px;
   -webkit-border-radius: 6px;
   -moz-border-radius: 6px;
@@ -182,6 +182,21 @@ html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 select:focus {
   border-color: #86b7fe;
   outline: 0;
   color: #212529;
+}
+@media (min-width: 200px) and (max-width: 470px) {
+  html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 select {
+    max-width: 95.8% !important;
+  }
+}
+@media (min-width: 471px) and (max-width: 991px) {
+  html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 select {
+    max-width: 94% !important;
+  }
+}
+@media (min-width: 992px) {
+  html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 select {
+    max-width: 93.5% !important;
+  }
 }
 html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 .lfFormBox {
   width: 100%;
