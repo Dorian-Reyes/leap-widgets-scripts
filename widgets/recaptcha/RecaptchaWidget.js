@@ -8,9 +8,7 @@ const recaptchaWidgetDefinition = {
   category: { id: "custom.security", label: "Widgets personalizados" },
   iconClassName: "recaptcha-icon",
 
-  // ============================================
   // BUILT-IN PROPERTIES REALES DE LEAP
-  // ============================================
   builtInProperties: [
     { id: "title" },
     { id: "id" },
@@ -18,9 +16,7 @@ const recaptchaWidgetDefinition = {
     { id: "seenInOverview", defaultValue: true },
   ],
 
-  // ============================================
   // PROPIEDADES PERSONALIZADAS
-  // ============================================
   properties: [
     {
       id: "siteKey",
@@ -31,7 +27,7 @@ const recaptchaWidgetDefinition = {
   ],
 
   instantiate: function (context, domNode, initialProps, eventManager) {
-    console.log("===== [RecaptchaWidget] Instanciando Widget =====");
+    // console.log("===== [RecaptchaWidget] Instanciando Widget =====");
 
     const widgetId =
       "recaptcha_" +
@@ -41,9 +37,7 @@ const recaptchaWidgetDefinition = {
     let errorFn = null;
     let lastValidationResult = null;
 
-    // ============================================
     // CONTENEDOR PRINCIPAL
-    // ============================================
     let container = document.getElementById(widgetId);
     if (!container) {
       container = document.createElement("div");
@@ -51,25 +45,20 @@ const recaptchaWidgetDefinition = {
       domNode.appendChild(container);
     }
 
-    // ============================================
     // INPUT OCULTO — VALOR REAL DEL WIDGET PARA LEAP
-    // ============================================
-    console.log("[HiddenInput] creando input oculto...");
+    // console.log("[HiddenInput] creando input oculto...");
 
     const hiddenInput = document.createElement("input");
-    hiddenInput.type = "text";
+    hiddenInput.type = "hidden"; // ← OCULTO NATIVO
     hiddenInput.id = widgetId + "_hiddenInput";
-
-    // DEBE iniciar vacío
     hiddenInput.value = "";
+    hiddenInput.style.display = "none"; // ← SEGURIDAD EXTRA
 
     domNode.appendChild(hiddenInput);
 
-    console.log(`[HiddenInput] creado con id=${hiddenInput.id}`);
+    // console.log(`[HiddenInput] creado con id=${hiddenInput.id}`);
 
-    // ============================================
     // RENDER DEL RECAPTCHA
-    // ============================================
     function renderRecaptcha(attempt = 0) {
       const MAX = 10,
         DELAY = 500;
@@ -77,9 +66,9 @@ const recaptchaWidgetDefinition = {
       if (!container) return;
 
       if (!window.grecaptcha || !grecaptcha.render) {
-        console.warn(
-          `[RecaptchaWidget] grecaptcha no cargado. Reintento (${attempt}/${MAX})`
-        );
+        // console.warn(
+        //   `[RecaptchaWidget] grecaptcha no cargado. Reintento (${attempt}/${MAX})`
+        // );
 
         if (attempt < MAX) {
           setTimeout(() => renderRecaptcha(attempt + 1), DELAY);
@@ -88,43 +77,35 @@ const recaptchaWidgetDefinition = {
       }
 
       try {
-        console.log("[RecaptchaWidget] Renderizando...");
+        // console.log("[RecaptchaWidget] Renderizando...");
 
         grecaptcha.render(widgetId, {
           sitekey: initialProps.siteKey,
           callback: function (responseToken) {
-            console.log("[RecaptchaWidget] token recibido:");
+            // console.log("[RecaptchaWidget] token recibido:");
 
             token = responseToken;
-
-            // ============================================
-            // ASIGNAR VALOR REAL DEL WIDGET
-            // ============================================
             hiddenInput.value = token;
 
-            console.log(`[HiddenInput] actualizado → lo que hay en el input `);
+            // console.log("[HiddenInput] actualizado");
 
-            // Limpia error si lo había
             if (errorFn) errorFn(null);
 
-            // Notificar a LEAP del cambio
             eventManager.sendEvent("onChange");
           },
         });
       } catch (e) {
-        console.error("Error en render:", e);
+        // console.error("Error en render:", e);
       }
     }
 
-    // ============================================
     // Cargar script de Google si no existe
-    // ============================================
     const existingScript = document.querySelector(
       "script[src*='recaptcha/api.js']"
     );
 
     if (!existingScript) {
-      console.log("[RecaptchaWidget] Cargando script reCAPTCHA...");
+      // console.log("[RecaptchaWidget] Cargando script reCAPTCHA...");
 
       const script = document.createElement("script");
       script.src = "https://www.google.com/recaptcha/api.js";
@@ -132,36 +113,31 @@ const recaptchaWidgetDefinition = {
       script.defer = true;
 
       script.onload = () => {
-        console.log("[RecaptchaWidget] Script cargado");
+        // console.log("[RecaptchaWidget] Script cargado");
         renderRecaptcha();
       };
 
       document.head.appendChild(script);
     } else {
-      console.log("[RecaptchaWidget] Script ya existe");
+      // console.log("[RecaptchaWidget] Script ya existe");
       renderRecaptcha();
     }
 
-    // ============================================
     // API DEL WIDGET
-    // ============================================
     return {
       getValue: () => {
-        console.log("[RecaptchaWidget] getValue() →", hiddenInput.value);
-        return hiddenInput.value; // <==== CAMBIO CRÍTICO
+        // console.log("[RecaptchaWidget] getValue() →", hiddenInput.value);
+        return hiddenInput.value;
       },
 
       setValue: (val) => {
-        console.log("[RecaptchaWidget] setValue():", val);
-
+        // console.log("[RecaptchaWidget] setValue():", val);
         token = val;
         hiddenInput.value = val;
-
-        console.log(`[HiddenInput] actualizado desde setValue()`);
       },
 
       validateValue: () => {
-        console.log("===== [RecaptchaWidget] validateValue() =====");
+        // console.log("===== [RecaptchaWidget] validateValue() =====");
 
         const val = hiddenInput.value;
         const isEmpty = !val || val.trim() === "";
@@ -169,14 +145,11 @@ const recaptchaWidgetDefinition = {
         let result = null;
 
         if (initialProps.required && isEmpty) {
-          console.warn("[RecaptchaWidget] VALIDACIÓN FALLIDA: vacío");
-
+          // console.warn("[RecaptchaWidget] VALIDACIÓN FALLIDA: vacío");
           result = "Por favor verifica el reCAPTCHA";
-
           if (errorFn) errorFn(result);
         } else {
-          console.log("[RecaptchaWidget] VALIDACIÓN OK");
-
+          // console.log("[RecaptchaWidget] VALIDACIÓN OK");
           if (errorFn) errorFn(null);
           result = null;
         }
@@ -186,11 +159,10 @@ const recaptchaWidgetDefinition = {
       },
 
       setProperty: (propName, propValue) => {
-        console.log(`[RecaptchaWidget] setProperty(${propName}):`, propValue);
+        // console.log(`[RecaptchaWidget] setProperty(${propName}):`, propValue);
 
         if (propName === "siteKey") {
           initialProps.siteKey = propValue;
-
           hiddenInput.value = "";
           token = "";
 
@@ -199,19 +171,19 @@ const recaptchaWidgetDefinition = {
               grecaptcha.reset();
               renderRecaptcha();
             } catch (e) {
-              console.warn("No se pudo resetear:", e);
+              // console.warn("No se pudo resetear:", e);
             }
           }
         }
       },
 
       setRequired: (r) => {
-        console.log(`[RecaptchaWidget] setRequired(${r})`);
+        // console.log(`[RecaptchaWidget] setRequired(${r})`);
         initialProps.required = r;
       },
 
       setErrorMessage: (fn) => {
-        console.log("[RecaptchaWidget] setErrorMessage() registrado");
+        // console.log("[RecaptchaWidget] setErrorMessage() registrado");
         errorFn = fn;
       },
     };
