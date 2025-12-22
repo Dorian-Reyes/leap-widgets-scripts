@@ -6,6 +6,10 @@
   display: flex;
   justify-content: center;
 }
+.lfMn .form-page-area {
+  width: 100% !important;
+  max-width: 100% !important;
+}
 .lfMn .dijitInputContainer {
   overflow: visible;
 }
@@ -13,6 +17,9 @@
   border: none;
   outline: none !important;
   border: none !important;
+}
+.lfMn .freedomError {
+  margin-top: 0;
 }
 .lfMn .horizontal-line {
   background: rgba(0, 0, 0, 0);
@@ -156,7 +163,8 @@ html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 select {
   padding: 6px 36px 6px 12px;
   font-size: 1rem;
   font-weight: 400;
-  border: 1px solid #dee2e6;
+  border: 1px solid #4b4b4b;
+  max-width: 95% !important;
   border-radius: 6px;
   -webkit-border-radius: 6px;
   -moz-border-radius: 6px;
