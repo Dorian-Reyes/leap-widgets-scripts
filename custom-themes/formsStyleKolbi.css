@@ -63,6 +63,21 @@
 .lfMn.lotusui30dojo .lfFormBtn.dijitButton:active {
   background-color: #50266c;
 }
+.lfMn.lotusui30dojo .lfFormActionCancelBtn {
+  background: #fff;
+  border: 1px solid #69328e;
+  color: #69328e;
+}
+.lfMn.lotusui30dojo .lfFormActionCancelBtn:hover {
+  background: #fff;
+  border: 1px solid #69328e;
+  color: #69328e;
+}
+.lfMn.lotusui30dojo .lfFormActionCancelBtn:active {
+  background: #fff;
+  border: 1px solid #69328e;
+  color: #69328e;
+}
 .lfMn.lotusui30dojo .dijitValidationTextBox .dijitTextBox {
   background-clip: padding-box;
   line-height: 1.5;
@@ -155,14 +170,14 @@ html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 select {
   -o-transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 select:focus {
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  box-shadow: 0 0 0 0.25rem rgba(121, 255, 147, 0.2509803922);
   border-color: #86b7fe;
   outline: 0;
   color: #212529;
 }
 html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 .lfFormBox {
   width: 100%;
-  max-width: 710px;
+  max-width: 710px !important;
   margin: 0 auto;
 }
 html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 .lfFormBox a {
