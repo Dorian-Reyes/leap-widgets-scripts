@@ -1,6 +1,9 @@
 .lfMn.lfSingleFormArea .lfAppFormArea .lfFormBox {
   margin-top: 40px;
 }
+.lfMn {
+  font-family: "KolbiSans-Regular", "Montserrat-Regular", Arial, sans-serif !important;
+}
 .lfMn .ifFormBody {
   padding: 0;
   display: flex;
@@ -42,6 +45,9 @@
   -moz-border-radius: 4px;
   -ms-border-radius: 4px;
   -o-border-radius: 4px;
+}
+.lfMn.lotusui30dojo .freedom-form label {
+  font-weight: normal;
 }
 .lfMn.lotusui30dojo .freedom-form label {
   font-size: 16px;
