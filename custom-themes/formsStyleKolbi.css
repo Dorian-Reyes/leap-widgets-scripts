@@ -160,15 +160,23 @@
   gap: 8px;
   align-items: center;
 }
+.lfMn .lfFormFooter {
+  width: 100%;
+}
 .lfMn .lfFormFooter .actionButtons {
   display: flex;
   justify-content: center;
+  width: 95%;
 }
 .lfMn .lfFormFooter .actionButtons .toolbar-list {
   width: 100%;
   display: flex;
   justify-content: center;
   gap: 12px;
+}
+.lfMn .lfFormFooter .actionButtons .toolbar-list li {
+  display: flex;
+  width: 100%;
 }
 .lfMn .lfFormFooter .actionButtons .toolbar-list .lfFormBtn.dijitButton {
   width: 100% !important;
