@@ -160,6 +160,19 @@
   gap: 8px;
   align-items: center;
 }
+.lfMn .lfFormFooter .actionButtons {
+  display: flex;
+  justify-content: center;
+}
+.lfMn .lfFormFooter .actionButtons .toolbar-list {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+.lfMn .lfFormFooter .actionButtons .toolbar-list .lfFormBtn.dijitButton {
+  width: 100% !important;
+}
 html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 select {
   padding: 6px 36px 6px 12px;
   font-size: 1rem;
