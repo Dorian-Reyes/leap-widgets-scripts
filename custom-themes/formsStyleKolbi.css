@@ -1,7 +1,4 @@
-.lfMn.lfSingleFormArea .lfAppFormArea .lfFormBox {
-  margin-top: 40px;
-}
-.lfMn {
+.lfMn .lfAppFormArea {
   font-family: "KolbiSans-Regular", "Montserrat-Regular", Arial, sans-serif !important;
 }
 .lfMn .ifFormBody {
@@ -47,7 +44,7 @@
   -o-border-radius: 4px;
 }
 .lfMn.lotusui30dojo .freedom-form label {
-  font-weight: normal;
+  font-weight: normal !important;
 }
 .lfMn.lotusui30dojo .freedom-form label {
   font-size: 16px;
@@ -206,6 +203,7 @@ html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 .lfFormBox {
   width: 100%;
   max-width: 710px !important;
   margin: 0 auto;
+  margin-top: 25px;
 }
 html:not(.dj_ie) body:not(.dj_a11y) .lfMn.lotusui30 .lfFormBox a {
   font-weight: 600;
